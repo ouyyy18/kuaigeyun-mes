@@ -16,6 +16,7 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 TOOL_DIR = Path(__file__).resolve().parent
@@ -54,15 +55,38 @@ def main() -> int:
         return 1
 
     print(f"extracting {len(code_files)} code files", flush=True)
+    started = time.monotonic()
     extraction = extract(code_files, cache_root=repo, root=repo)
+    print(f"extracted in {time.monotonic() - started:.1f}s; building graph", flush=True)
+    started = time.monotonic()
     G = build_from_json(extraction, root=repo, directed=False)
     if G.number_of_nodes() == 0:
         print("empty graph", file=sys.stderr)
         return 1
-    # Seed communities so to_json can serialize a normal graph.json for the
-    # post-pass scripts; real clustering happens after the patches.
-    communities = {0: [n for n in G.nodes]}
-    to_json(G, communities, str(graph_path))
+    print(
+        f"built {G.number_of_nodes()} nodes / {G.number_of_edges()} edges "
+        f"in {time.monotonic() - started:.1f}s; writing raw graph",
+        flush=True,
+    )
+    raw_nodes = []
+    for nid, data in G.nodes(data=True):
+        node = dict(data)
+        node["id"] = nid
+        raw_nodes.append(node)
+    raw_links = []
+    for source, target, data in G.edges(data=True):
+        edge = dict(data)
+        edge["source"] = source
+        edge["target"] = target
+        raw_links.append(edge)
+    graph_path.write_text(
+        json.dumps(
+            {"nodes": raw_nodes, "links": raw_links, "hyperedges": extraction.get("hyperedges", [])},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    print(f"raw graph written: {graph_path}", flush=True)
 
     run([
         sys.executable,

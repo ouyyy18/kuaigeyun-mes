@@ -35,7 +35,7 @@ jobs:
           node-version: "20"
 
       - name: Install graphify
-        run: pip install graphifyy
+        run: pip install graphifyy==0.9.92
 
       - name: Install TypeScript compiler
         run: npm install --prefix .graphify-tools --no-audit --no-fund typescript@5.6.3
