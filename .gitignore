@@ -82,6 +82,8 @@ design/
 *.qea
 # CI：工作流在团队仓库中不跟踪（本地可自建 .github/workflows）
 .github/workflows/
+!.github/workflows/
+!.github/workflows/graphify-instance-calls.yml
 nul
 *.swp
 *.swo
@@ -210,3 +212,7 @@ riveredge-frontend/dist-live/
 # AOCI agent host integration (machine-bound; do not commit)
 .codex/config.toml
 .codex/config.toml.backup.*
+
+# graphify graph outputs and CI-local tool installs
+graphify-out/
+.graphify-tools/

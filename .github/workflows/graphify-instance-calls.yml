@@ -1,0 +1,55 @@
+name: graphify instance-call graph
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "riveredge-backend/src/**/*.py"
+      - "riveredge-frontend/src/**/*.ts"
+      - "riveredge-frontend/src/**/*.tsx"
+      - "fast-deploy/tools/graphify/**"
+      - ".github/workflows/graphify-instance-calls.yml"
+  pull_request:
+    paths:
+      - "riveredge-backend/src/**/*.py"
+      - "riveredge-frontend/src/**/*.ts"
+      - "riveredge-frontend/src/**/*.tsx"
+      - "fast-deploy/tools/graphify/**"
+
+permissions:
+  contents: read
+
+jobs:
+  graph:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install graphify
+        run: pip install graphifyy
+
+      - name: Install TypeScript compiler
+        run: npm install --prefix .graphify-tools --no-audit --no-fund typescript@5.6.3
+
+      - name: Build code graph and add instance-call edges
+        run: |
+          python fast-deploy/tools/graphify/build_code_graph.py \
+            --repo . \
+            --out graphify-out \
+            --typescript .graphify-tools/node_modules/typescript
+
+      - name: Upload graph
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphify-graph
+          path: graphify-out/graph.json
+          retention-days: 7
